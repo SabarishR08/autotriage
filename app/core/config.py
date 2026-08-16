@@ -37,6 +37,11 @@ class Settings:
     HOST: str = os.getenv("HOST", "0.0.0.0")
     PORT: int = int(os.getenv("PORT", "8000"))
 
+    # --- Auth ---
+    # Set this to require an X-API-Key header on the ingestion endpoint.
+    # Leave blank to run open (development / internal-only deployments).
+    AUTOTRIAGE_API_KEY: str | None = os.getenv("AUTOTRIAGE_API_KEY")
+
 
 @lru_cache
 def get_settings() -> Settings:
