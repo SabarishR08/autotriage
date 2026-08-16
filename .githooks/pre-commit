@@ -1,0 +1,36 @@
+#!/bin/sh
+# Pre-commit hook: block commits containing API key patterns.
+# Install: git config core.hooksPath .githooks
+
+PATTERNS="nvapi-[A-Za-z0-9_-]{20,}|gsk_[A-Za-z0-9]{20,}|AIza[A-Za-z0-9_-]{35,}|sk-[A-Za-z0-9]{20,}|AKIA[A-Z0-9]{16}"
+
+# Only scan staged files
+STAGED=$(git diff --cached --name-only --diff-filter=ACM)
+
+if [ -z "$STAGED" ]; then
+    exit 0
+fi
+
+FOUND=0
+for FILE in $STAGED; do
+    # Skip binary files
+    if git diff --cached --name-only "$FILE" | xargs -I{} git show ":$FILE" 2>/dev/null | file - | grep -q "binary"; then
+        continue
+    fi
+    MATCHES=$(git show ":$FILE" 2>/dev/null | grep -E "$PATTERNS" | head -5)
+    if [ -n "$MATCHES" ]; then
+        echo ""
+        echo "  BLOCKED: Possible API key in staged file: $FILE"
+        echo "$MATCHES" | sed 's/\(.\{8\}\).*/\1[REDACTED]/'
+        FOUND=1
+    fi
+done
+
+if [ $FOUND -ne 0 ]; then
+    echo ""
+    echo "Commit blocked. Remove API keys before committing."
+    echo "Store secrets in .env (gitignored) or a password manager."
+    exit 1
+fi
+
+exit 0

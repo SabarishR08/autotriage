@@ -1,6 +1,5 @@
 __pycache__/
 *.pyc
-.env
 *.db
 .venv/
 venv/
@@ -12,3 +11,14 @@ build/
 *.egg-info/
 node_modules/
 .DS_Store
+
+# Secrets — never commit these
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+secrets/
+credentials/
