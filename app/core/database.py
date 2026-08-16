@@ -60,12 +60,22 @@ def run_migrations() -> None:
     """
     Run Alembic migrations at startup (upgrade to head).
 
-    This replaces the old `create_all` call and works for both SQLite (dev)
-    and Postgres (production). Running on every startup is safe — Alembic
-    is idempotent and only applies pending revisions.
+    Uses an absolute path to alembic.ini so this works regardless of the
+    process working directory (important in containerised environments).
     """
+    import os
+    from pathlib import Path
+
     from alembic import command
     from alembic.config import Config
 
-    alembic_cfg = Config("alembic.ini")
+    # Resolve alembic.ini relative to this file's location:
+    # database.py lives at app/core/database.py
+    # alembic.ini lives at the project root (two levels up)
+    project_root = Path(__file__).resolve().parent.parent.parent
+    ini_path = project_root / "alembic.ini"
+
+    alembic_cfg = Config(str(ini_path))
+    # Ensure the script_location is also absolute
+    alembic_cfg.set_main_option("script_location", str(project_root / "alembic"))
     command.upgrade(alembic_cfg, "head")

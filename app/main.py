@@ -28,9 +28,10 @@ app = FastAPI(
     ),
     version="0.2.0",
     lifespan=lifespan,
-    # Disable interactive docs in production — avoids exposing schema publicly
-    docs_url="/docs" if settings.APP_ENV != "production" else None,
-    redoc_url="/redoc" if settings.APP_ENV != "production" else None,
+    # Keep OpenAPI docs available — they expose no secrets and are useful
+    # for integration. Disable only if you need to lock down the schema.
+    docs_url="/docs",
+    redoc_url="/redoc",
 )
 
 app.add_middleware(
