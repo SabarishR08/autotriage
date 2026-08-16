@@ -1,0 +1,5 @@
+# Development and test dependencies — NOT installed in the production image.
+-r base.txt
+
+pytest==8.3.3
+httpx==0.27.2

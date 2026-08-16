@@ -5,14 +5,17 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api import analytics, health, logs
 from app.core.config import get_settings
-from app.core.database import init_db
+from app.core.database import run_migrations
 
 settings = get_settings()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    init_db()
+    # 1. Validate required config — exits with clear error if misconfigured
+    settings.validate()
+    # 2. Run Alembic migrations to head (safe to run on every startup)
+    run_migrations()
     yield
 
 
@@ -23,15 +26,18 @@ app = FastAPI(
         "them against a GitHub repo, and generate root-cause analysis and "
         "deploy-ready fixes — no SDK, no sidecar, just a REST endpoint."
     ),
-    version="0.1.0",
+    version="0.2.0",
     lifespan=lifespan,
+    # Disable interactive docs in production — avoids exposing schema publicly
+    docs_url="/docs" if settings.APP_ENV != "production" else None,
+    redoc_url="/redoc" if settings.APP_ENV != "production" else None,
 )
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=settings.ALLOWED_ORIGINS,
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type", "X-API-Key"],
 )
 
 app.include_router(health.router)

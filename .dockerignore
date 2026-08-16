@@ -1,0 +1,47 @@
+# --- Secrets and local config ---
+.env
+.env.*
+!.env.example
+
+# --- Runtime / generated ---
+*.db
+*.sqlite
+*.sqlite3
+autotriage.db
+
+# --- Python artifacts ---
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+.eggs/
+dist/
+build/
+*.whl
+
+# --- Virtual environments ---
+.venv/
+venv/
+env/
+
+# --- Test artifacts ---
+tests/
+.pytest_cache/
+.coverage
+htmlcov/
+.hypothesis/
+
+# --- Dev tooling ---
+graphify-out/
+*.md
+!README.md
+.gitignore
+.githooks/
+kiro-autotriage-prompt.md
+
+# --- IDE / OS ---
+.git/
+.DS_Store
+Thumbs.db
+*.swp

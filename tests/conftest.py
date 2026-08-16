@@ -1,3 +1,13 @@
+"""
+Test configuration and shared fixtures.
+
+The lifespan in main.py calls settings.validate() and run_migrations().
+Both fail in the test environment (no real LLM key, no alembic.ini on PATH).
+We mock them out so tests run against an in-memory SQLite DB only.
+"""
+
+from unittest.mock import patch
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -34,4 +44,14 @@ def test_db():
 
 @pytest.fixture()
 def client(test_db):
-    return TestClient(app)
+    # Patch out the two lifespan side-effects that require real infrastructure:
+    #   - settings.validate()  → would sys.exit(1) if LLM_API_KEY is unset
+    #   - run_migrations()     → requires alembic.ini + a real DB connection
+    # Tests use an in-memory SQLite DB created directly via Base.metadata.create_all
+    # in the test_db fixture, so no migration runner is needed.
+    with (
+        patch("app.main.settings.validate"),
+        patch("app.main.run_migrations"),
+    ):
+        with TestClient(app) as c:
+            yield c

@@ -1,0 +1,13 @@
+# Production dependencies — installed into the Docker image and on Render.
+# Pin every version. Run `pip-compile` to regenerate if you update anything.
+
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+sqlalchemy==2.0.35
+pydantic==2.9.2
+python-dotenv==1.0.1
+PyGithub==2.4.0
+openai==1.51.0
+anthropic==0.34.2
+alembic==1.13.3
+psycopg2-binary==2.9.9

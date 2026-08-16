@@ -1,9 +1,83 @@
+# docker-compose.yml — local development + integration testing
+#
+# For production: use render.yaml (Render) or deploy the built image directly.
+# Never use the bind-mount (volumes: ./:/app) in a deployed environment.
+
 services:
+
+  # ── Option A: SQLite (default, zero-setup local dev) ───────────────────────
   autotriage:
-    build: .
+    build:
+      context: .
+      target: production
+    image: autotriage:local
     ports:
       - "8000:8000"
     env_file:
       - .env
     volumes:
-      - ./:/app
+      # Named volume for the SQLite DB so it survives container restarts.
+      # Does NOT bind-mount source code — the image contains the built app.
+      - autotriage_db:/app/data
+    environment:
+      DATABASE_URL: sqlite:////app/data/autotriage.db
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request, sys; r = urllib.request.urlopen('http://localhost:8000/health', timeout=8); sys.exit(0 if r.status == 200 else 1)"]
+      interval: 30s
+      timeout: 10s
+      start_period: 20s
+      retries: 3
+    profiles:
+      - sqlite   # run with: docker-compose --profile sqlite up
+
+  # ── Option B: Postgres (production-equivalent local dev) ───────────────────
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: autotriage
+      POSTGRES_PASSWORD: autotriage_dev
+      POSTGRES_DB: autotriage
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U autotriage"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    profiles:
+      - postgres
+
+  autotriage-pg:
+    build:
+      context: .
+      target: production
+    image: autotriage:local
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://autotriage:autotriage_dev@postgres:5432/autotriage
+      APP_ENV: development
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request, sys; r = urllib.request.urlopen('http://localhost:8000/health', timeout=8); sys.exit(0 if r.status == 200 else 1)"]
+      interval: 30s
+      timeout: 10s
+      start_period: 20s
+      retries: 3
+    profiles:
+      - postgres
+
+volumes:
+  autotriage_db:
+  postgres_data:
