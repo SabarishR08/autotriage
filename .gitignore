@@ -22,3 +22,6 @@ node_modules/
 *.pfx
 secrets/
 credentials/
+
+# Graphify outputs (generated, not source)
+graphify-out/
