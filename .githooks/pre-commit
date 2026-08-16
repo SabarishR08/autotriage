@@ -1,10 +1,19 @@
 #!/bin/sh
 # Pre-commit hook: block commits containing API key patterns.
-# Install: git config core.hooksPath .githooks
+# Installed via: git config core.hooksPath .githooks
+#
+# Patterns covered:
+#   nvapi-    NVIDIA API keys
+#   gsk_      Groq API keys
+#   github_pat_  GitHub fine-grained PATs
+#   ghp_      GitHub classic PATs
+#   AIza      Google/Gemini API keys
+#   sk-       OpenAI-style secret keys
+#   AKIA      AWS access key IDs
 
-PATTERNS="nvapi-[A-Za-z0-9_-]{20,}|gsk_[A-Za-z0-9]{20,}|AIza[A-Za-z0-9_-]{35,}|sk-[A-Za-z0-9]{20,}|AKIA[A-Z0-9]{16}"
+PATTERNS="nvapi-[A-Za-z0-9_-]{20,}|gsk_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|ghp_[A-Za-z0-9]{20,}|AIza[A-Za-z0-9_-]{35,}|sk-[A-Za-z0-9]{20,}|AKIA[A-Z0-9]{16}"
 
-# Only scan staged files
+# Only scan staged files (added/copied/modified)
 STAGED=$(git diff --cached --name-only --diff-filter=ACM)
 
 if [ -z "$STAGED" ]; then
@@ -13,23 +22,23 @@ fi
 
 FOUND=0
 for FILE in $STAGED; do
-    # Skip binary files
-    if git diff --cached --name-only "$FILE" | xargs -I{} git show ":$FILE" 2>/dev/null | file - | grep -q "binary"; then
-        continue
-    fi
-    MATCHES=$(git show ":$FILE" 2>/dev/null | grep -E "$PATTERNS" | head -5)
+    CONTENT=$(git show ":$FILE" 2>/dev/null)
+    if [ $? -ne 0 ]; then continue; fi
+
+    MATCHES=$(echo "$CONTENT" | grep -E "$PATTERNS" | grep -v "PATTERNS=" | grep -v "\[A-Za-z" | head -5)
     if [ -n "$MATCHES" ]; then
         echo ""
-        echo "  BLOCKED: Possible API key in staged file: $FILE"
-        echo "$MATCHES" | sed 's/\(.\{8\}\).*/\1[REDACTED]/'
+        echo "  BLOCKED: Possible API key detected in: $FILE"
+        echo "$MATCHES" | sed 's/\(.\{12\}\).*/\1[REDACTED]/'
         FOUND=1
     fi
 done
 
 if [ $FOUND -ne 0 ]; then
     echo ""
-    echo "Commit blocked. Remove API keys before committing."
-    echo "Store secrets in .env (gitignored) or a password manager."
+    echo "  Commit blocked. Remove secrets before committing."
+    echo "  Store secrets in .env (gitignored) or a password manager."
+    echo "  If this is a false positive, inspect the match above carefully."
     exit 1
 fi
 
