@@ -10,7 +10,7 @@ from functools import lru_cache
 
 from dotenv import load_dotenv
 
-load_dotenv(override=False)  # load .env before any os.getenv calls; won't override existing env vars
+load_dotenv(override=True)  # .env always wins over any inherited shell env vars
 
 
 class Settings:
