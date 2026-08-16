@@ -30,7 +30,10 @@ class Settings:
     APP_ENV: str = os.getenv("APP_ENV", "development")
 
     # --- Database ---
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./autotriage.db")
+    # Render (and Heroku) inject DATABASE_URL as postgres:// — SQLAlchemy 2.x
+    # requires postgresql://. Fix it transparently here.
+    _raw_db_url: str = os.getenv("DATABASE_URL", "sqlite:///./autotriage.db")
+    DATABASE_URL: str = _raw_db_url.replace("postgres://", "postgresql://", 1)
 
     # --- GitHub ---
     GITHUB_TOKEN: str | None = os.getenv("GITHUB_TOKEN")
