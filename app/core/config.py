@@ -64,14 +64,15 @@ class Settings:
 
     def validate(self) -> None:
         """
-        Fail fast on startup if required secrets are missing.
+        Validate config at startup.
 
-        Called from the FastAPI lifespan so the container exits immediately
-        with a clear error rather than surfacing a cryptic 500 on the first
-        triage attempt.
+        Hard errors (sys.exit): missing secrets that make the app non-functional.
+        Warnings (stderr only): security recommendations that don't block operation.
         """
         errors: list[str] = []
+        warnings: list[str] = []
 
+        # Hard error — app literally cannot triage without this
         if not self.LLM_API_KEY:
             errors.append(
                 "LLM_API_KEY is not set. "
@@ -79,16 +80,23 @@ class Settings:
             )
 
         if self.APP_ENV == "production":
+            # Warn but don't block — wildcard CORS is acceptable while there
+            # is no frontend yet; tighten once a domain exists.
             if self.ALLOWED_ORIGINS == ["*"]:
-                errors.append(
-                    "ALLOWED_ORIGINS must not be '*' in production. "
-                    "Set it to your frontend domain(s)."
+                warnings.append(
+                    "ALLOWED_ORIGINS is '*'. "
+                    "Set it to your frontend domain(s) before going public."
                 )
+            # Warn but don't block — ingestion endpoint may be intentionally open
+            # for an internal-only deployment.
             if not self.AUTOTRIAGE_API_KEY:
-                errors.append(
+                warnings.append(
                     "AUTOTRIAGE_API_KEY is not set. "
-                    "The ingestion endpoint is open to anyone in production."
+                    "The ingestion endpoint is open to anyone."
                 )
+
+        for msg in warnings:
+            print(f"[AutoTriage] STARTUP WARNING: {msg}", file=sys.stderr)
 
         if errors:
             for msg in errors:
