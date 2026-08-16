@@ -8,6 +8,10 @@ only. Nothing here is ever hardcoded or committed.
 import os
 from functools import lru_cache
 
+from dotenv import load_dotenv
+
+load_dotenv(override=False)  # load .env before any os.getenv calls; won't override existing env vars
+
 
 class Settings:
     # --- App ---
@@ -23,9 +27,11 @@ class Settings:
 
     # --- LLM ---
     # Provider is swappable: "openai" | "anthropic"
+    # For OpenAI-compatible providers (Groq, NVIDIA NIM, etc.) set OPENAI_API_BASE.
     LLM_PROVIDER: str = os.getenv("LLM_PROVIDER", "anthropic")
     LLM_API_KEY: str | None = os.getenv("LLM_API_KEY")
     LLM_MODEL: str = os.getenv("LLM_MODEL", "claude-sonnet-4-6")
+    OPENAI_API_BASE: str | None = os.getenv("OPENAI_API_BASE")  # e.g. https://api.groq.com/openai/v1
 
     # --- Server ---
     HOST: str = os.getenv("HOST", "0.0.0.0")

@@ -42,14 +42,17 @@ class BaseLLMProvider(ABC):
 
 
 class OpenAIProvider(BaseLLMProvider):
-    def __init__(self, api_key: str, model: str):
+    def __init__(self, api_key: str, model: str, base_url: str | None = None):
         try:
             from openai import OpenAI
         except ImportError as exc:  # pragma: no cover
             raise LLMProviderError(
                 "openai package not installed. Run: pip install openai"
             ) from exc
-        self._client = OpenAI(api_key=api_key)
+        kwargs: dict = {"api_key": api_key}
+        if base_url:
+            kwargs["base_url"] = base_url
+        self._client = OpenAI(**kwargs)
         self._model = model
 
     def analyze(self, stack_trace: str, source_context: str) -> dict[str, Any]:
@@ -115,7 +118,7 @@ def get_llm_provider() -> BaseLLMProvider:
         )
 
     if settings.LLM_PROVIDER == "openai":
-        return OpenAIProvider(settings.LLM_API_KEY, settings.LLM_MODEL)
+        return OpenAIProvider(settings.LLM_API_KEY, settings.LLM_MODEL, settings.OPENAI_API_BASE)
     if settings.LLM_PROVIDER == "anthropic":
         return AnthropicProvider(settings.LLM_API_KEY, settings.LLM_MODEL)
 

@@ -24,7 +24,9 @@ def test_extract_file_paths_dedupes():
 
 
 def test_fetch_source_context_without_config():
-    service = GitHubService(token=None, repo=None)
+    # Pass sentinel empty strings to bypass os.getenv fallback — simulates
+    # a deployment where GitHub is genuinely not configured.
+    service = GitHubService(token="", repo="")
     assert service.is_configured is False
     result = service.fetch_source_context(["app/foo.py"])
     assert "not configured" in result.lower() or "no source context" in result.lower()

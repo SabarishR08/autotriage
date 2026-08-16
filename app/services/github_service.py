@@ -18,8 +18,10 @@ class GitHubServiceError(RuntimeError):
 class GitHubService:
     def __init__(self, token: str | None = None, repo: str | None = None):
         settings = get_settings()
-        self._token = token or settings.GITHUB_TOKEN
-        self._repo_name = repo or settings.GITHUB_REPO
+        # Fall back to settings only when the caller passes None explicitly.
+        # An empty string means "force unconfigured" (used in tests and health checks).
+        self._token = settings.GITHUB_TOKEN if token is None else token
+        self._repo_name = settings.GITHUB_REPO if repo is None else repo
 
         if not self._token or not self._repo_name:
             self._client = None
