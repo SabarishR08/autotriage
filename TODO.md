@@ -1,0 +1,33 @@
+# autotriage â€” daily improvement backlog
+# Agent picks the first unchecked item each time this repo is scheduled.
+
+- [ ] Add docstring to the main triage entry-point function explaining its input/output contract
+- [ ] Add a __version__ = "0.1.0" constant to the package __init__.py
+- [ ] Add type hints to any function missing them in the log ingestion module
+- [ ] Add a CONTRIBUTING.md with setup steps: clone, create venv, pip install -r requirements.txt
+- [ ] Add a .editorconfig file enforcing 4-space indent, UTF-8, and trailing newline
+- [ ] Replace bare print() calls with logging.getLogger(__name__) in all modules
+- [ ] Add a top-level try/except in the CLI entry point that logs unhandled exceptions and exits 1
+- [ ] Replace any bare except: clauses with except Exception as e: and log the error
+- [ ] Add a constants.py module with project-wide string literals currently scattered inline
+- [ ] Add __all__ exports to any module that is missing them
+- [ ] Add a simple healthcheck function that returns {"status": "ok", "version": __version__}
+- [ ] Add input validation to the log ingestion entry point (reject empty payloads early)
+- [ ] Extract magic numbers and hardcoded timeouts into named constants
+- [ ] Add a requirements-dev.txt with pytest and ruff as dev dependencies
+- [ ] Add a pytest.ini section with testpaths = ["tests"]
+- [ ] Create a tests/ directory with a placeholder test_smoke.py that imports the main module
+- [ ] Add a .gitattributes file to normalise line endings (text=auto eol=lf)
+- [ ] Add an error_code field to the triage result schema with a short slug
+- [ ] Add a confidence_score float field (0.0-1.0) to the patch suggestion output
+- [ ] Add a simple retry helper (max 3 attempts, exponential backoff) for outbound HTTP calls
+- [ ] Add response time tracking: log elapsed ms for each triage request
+- [ ] Add a module-level docstring to each source file that currently lacks one
+- [ ] Normalise exception messages to sentence case across all raise statements
+- [ ] Add a deduplicate_errors() utility that filters identical stack traces
+- [ ] Add a truncate_log(text, max_chars=4000) utility used before sending logs to LLM
+- [ ] Add stack_trace_hash() that produces a short SHA of the normalised stack trace
+- [ ] Add a simple in-memory LRU cache for repeated identical triage requests
+- [ ] Add a rate_limit_aware_call() wrapper that sleeps on HTTP 429 and retries
+- [ ] Add a pydantic dataclass for the triage result replacing plain dict returns
+- [ ] Add a CLI --dry-run flag that prints the proposed patch without opening a PR
