@@ -2,7 +2,7 @@
 # Agent picks the first unchecked item each time this repo is scheduled.
 
 - [x] Add docstring to the main triage entry-point function explaining its input/output contract
-- [ ] Add a __version__ = "0.1.0" constant to the package __init__.py
+- [x] Add a __version__ = "0.1.0" constant to the package __init__.py
 - [ ] Add type hints to any function missing them in the log ingestion module
 - [ ] Add a CONTRIBUTING.md with setup steps: clone, create venv, pip install -r requirements.txt
 - [ ] Add a .editorconfig file enforcing 4-space indent, UTF-8, and trailing newline
