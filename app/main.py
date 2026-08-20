@@ -11,7 +11,19 @@ settings = get_settings()
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> None:
+    """
+    The main entry-point for the application's lifespan.
+
+    This function is responsible for validating the required configuration,
+    running Alembic migrations, and yielding control to the application.
+
+    Args:
+        app (FastAPI): The FastAPI application instance.
+
+    Yields:
+        None
+    """
     # 1. Validate required config — exits with clear error if misconfigured
     settings.validate()
     # 2. Run Alembic migrations to head (safe to run on every startup)
