@@ -1,33 +1,34 @@
 # autotriage â€” daily improvement backlog
 # Agent picks the first unchecked item each time this repo is scheduled.
+# IMPORTANT: reference actual filenames so the context gatherer picks up the right files.
 
 - [x] Add docstring to the main triage entry-point function explaining its input/output contract
 - [x] Add a __version__ = "0.1.0" constant to the package __init__.py
-- [ ] Add type hints to any function missing them in the log ingestion module
+- [ ] Add type hints to any function missing them in app/api/logs.py
+- [ ] Add type hints to any function missing them in app/services/triage_service.py
+- [ ] Add a module-level docstring to app/api/logs.py explaining its purpose
+- [ ] Add a module-level docstring to app/services/triage_service.py explaining its purpose
+- [ ] Add input validation in app/api/logs.py to reject empty payloads with HTTP 422
+- [ ] Add a top-level try/except in app/main.py that logs unhandled exceptions and exits 1
+- [ ] Replace bare print() calls with logging.getLogger(__name__) in app/services/triage_service.py
+- [ ] Replace bare print() calls with logging.getLogger(__name__) in app/api/logs.py
 - [ ] Add a CONTRIBUTING.md with setup steps: clone, create venv, pip install -r requirements.txt
 - [ ] Add a .editorconfig file enforcing 4-space indent, UTF-8, and trailing newline
-- [ ] Replace bare print() calls with logging.getLogger(__name__) in all modules
-- [ ] Add a top-level try/except in the CLI entry point that logs unhandled exceptions and exits 1
-- [ ] Replace any bare except: clauses with except Exception as e: and log the error
-- [ ] Add a constants.py module with project-wide string literals currently scattered inline
-- [ ] Add __all__ exports to any module that is missing them
-- [ ] Add a simple healthcheck function that returns {"status": "ok", "version": __version__}
-- [ ] Add input validation to the log ingestion entry point (reject empty payloads early)
-- [ ] Extract magic numbers and hardcoded timeouts into named constants
-- [ ] Add a requirements-dev.txt with pytest and ruff as dev dependencies
-- [ ] Add a pytest.ini section with testpaths = ["tests"]
-- [ ] Create a tests/ directory with a placeholder test_smoke.py that imports the main module
 - [ ] Add a .gitattributes file to normalise line endings (text=auto eol=lf)
-- [ ] Add an error_code field to the triage result schema with a short slug
-- [ ] Add a confidence_score float field (0.0-1.0) to the patch suggestion output
-- [ ] Add a simple retry helper (max 3 attempts, exponential backoff) for outbound HTTP calls
-- [ ] Add response time tracking: log elapsed ms for each triage request
-- [ ] Add a module-level docstring to each source file that currently lacks one
-- [ ] Normalise exception messages to sentence case across all raise statements
-- [ ] Add a deduplicate_errors() utility that filters identical stack traces
-- [ ] Add a truncate_log(text, max_chars=4000) utility used before sending logs to LLM
-- [ ] Add stack_trace_hash() that produces a short SHA of the normalised stack trace
-- [ ] Add a simple in-memory LRU cache for repeated identical triage requests
-- [ ] Add a rate_limit_aware_call() wrapper that sleeps on HTTP 429 and retries
-- [ ] Add a pydantic dataclass for the triage result replacing plain dict returns
-- [ ] Add a CLI --dry-run flag that prints the proposed patch without opening a PR
+- [ ] Add a constants.py module in app/core/ with project-wide string literals
+- [ ] Add __all__ exports to app/services/__init__.py
+- [ ] Add __all__ exports to app/api/__init__.py
+- [ ] Add a simple healthcheck endpoint to app/api/health.py returning version from app/__init__.py
+- [ ] Extract magic numbers and hardcoded timeouts into named constants in app/core/config.py
+- [ ] Add a requirements-dev.txt with pytest and ruff as dev dependencies
+- [ ] Add response time tracking to app/api/logs.py: log elapsed ms for each request
+- [ ] Add a truncate_log(text, max_chars=4000) utility to app/services/triage_service.py
+- [ ] Add a deduplicate_errors() utility to app/services/triage_service.py
+- [ ] Add a stack_trace_hash() function in app/services/triage_service.py using hashlib
+- [ ] Add a rate_limit_aware_call() wrapper in app/services/llm_provider.py that sleeps on 429
+- [ ] Add a simple retry helper (max 3 attempts, exponential backoff) in app/services/llm_provider.py
+- [ ] Normalise exception messages to sentence case in app/api/logs.py
+- [ ] Replace any bare except: with except Exception as e: in app/services/triage_service.py
+- [ ] Add a confidence_score float field (0.0-1.0) to the triage result in app/models/schemas.py
+- [ ] Add an error_code field to the triage result schema in app/models/schemas.py
+- [ ] Add a pydantic model for the triage result in app/models/schemas.py replacing plain dict returns
