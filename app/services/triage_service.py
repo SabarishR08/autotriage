@@ -1,3 +1,9 @@
+"""Triage service for analyzing error logs and generating fixes.
+
+This module coordinates the error triage workflow by extracting source context
+from GitHub, analyzing stack traces with an LLM, and optionally creating pull
+requests with suggested fixes.
+"""
 import logging
 from datetime import datetime, timezone
 from sqlalchemy.orm import Session
