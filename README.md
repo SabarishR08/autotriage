@@ -1,4 +1,83 @@
-# AutoTriage
+# Autotriage
+
+![License](https://img.shields.io/badge/license-MIT-green) ![Language](https://img.shields.io/badge/language-Python-informational) ![Docker](https://img.shields.io/badge/docker-ready-2496ed) ![Deploy](https://img.shields.io/badge/deploy-Render-46e3b7)
+
+
+## 📌 Overview
+
+Agentless API observability platform that auto-triages backend errors — ingests logs, maps stack traces to source via GitHub, and generates deploy-ready patches/PRs.
+
+## 🏗️ Architecture
+
+```text
+Browser / UI
+     │   HTTP
+     ▼
+FastAPI app
+     │
+     ├──▶ Services — github_service, llm_provider, triage_service
+     ├──▶ Database — PostgreSQL
+     └──▶ External services — OpenAI, Google Gemini
+```
+
+## 🧰 Tech Stack
+
+- **Language:** Python
+- **Backend:** FastAPI
+- **Database:** PostgreSQL
+- **Integrations:** OpenAI, Google Gemini
+- **Deployment:** Docker container / Render (render.yaml)
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Python 3.10+
+- Docker (optional, for container runs)
+
+### 1. Clone
+
+```bash
+git clone https://github.com/SabarishR08/autotriage.git
+cd autotriage
+```
+
+### 2. Install dependencies
+
+```bash
+python -m venv .venv
+source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+### 3. Configure environment
+
+```bash
+cp .env.example .env   # then fill in values
+```
+
+Environment variables used: `APP_ENV`, `HOST`, `PORT`, `DATABASE_URL`, `GITHUB_TOKEN`, `GITHUB_REPO`, `LLM_PROVIDER`, `LLM_API_KEY`, `LLM_MODEL`, `OPENAI_API_BASE`, `GROQ_API_KEY`, `GEMINI_API_KEY`, `NVIDIA_API_KEY`, `ALLOWED_ORIGINS`, `AUTOTRIAGE_API_KEY`.
+
+External services involved: OpenAI, Google Gemini.
+
+### 4. Run
+
+```bash
+python app/main.py
+```
+
+### (Alternative) Run with Docker
+
+```bash
+docker compose up --build
+```
+
+## ☁️ Deployment
+
+Defined in `render.yaml` (web service `autotriage`) with `autoDeploy` enabled — pushes to the default branch trigger a Render deploy.
+
+
+---
 
 Agentless API observability platform that automatically investigates backend errors and generates code-level fixes.
 
@@ -320,6 +399,8 @@ curl http://localhost:8000/api/v1/analytics
 
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — component responsibilities, data flow, and design decisions.
 
-## License
+---
 
-MIT — see [LICENSE](LICENSE).
+## 📄 License
+
+[MIT](LICENSE) — © 2026 Sabarish R.
