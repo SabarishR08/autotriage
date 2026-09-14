@@ -3,11 +3,11 @@
 ![License](https://img.shields.io/badge/license-MIT-green) ![Language](https://img.shields.io/badge/language-Python-informational) ![Docker](https://img.shields.io/badge/docker-ready-2496ed) ![Deploy](https://img.shields.io/badge/deploy-Render-46e3b7)
 
 
-## 📌 Overview
+## Overview
 
 Agentless API observability platform that auto-triages backend errors — ingests logs, maps stack traces to source via GitHub, and generates deploy-ready patches/PRs.
 
-## 🏗️ Architecture
+## Architecture
 
 ```text
 Browser / UI
@@ -20,7 +20,7 @@ FastAPI app
      └──▶ External services — OpenAI, Google Gemini
 ```
 
-## 🧰 Tech Stack
+## Tech Stack
 
 - **Language:** Python
 - **Backend:** FastAPI
@@ -28,7 +28,7 @@ FastAPI app
 - **Integrations:** OpenAI, Google Gemini
 - **Deployment:** Docker container / Render (render.yaml)
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -72,7 +72,7 @@ python app/main.py
 docker compose up --build
 ```
 
-## ☁️ Deployment
+## Deployment
 
 Defined in `render.yaml` (web service `autotriage`) with `autoDeploy` enabled — pushes to the default branch trigger a Render deploy.
 
@@ -181,36 +181,36 @@ sequenceDiagram
    ```bash
    git clone https://github.com/SabarishR08/autotriage.git
    cd autotriage
-   ```
+ ```
 
 2. **Create a virtual environment and install dependencies**
    ```bash
    python -m venv .venv
    source .venv/bin/activate   # Windows: .venv\Scripts\activate
    pip install -r requirements.txt
-   ```
+ ```
 
 3. **Configure environment variables**
    ```bash
    cp .env.example .env
-   ```
-   Key variables:
+ ```
+ Key variables:
 
-   | Variable | Required | Description |
-   |---|---|---|
-   | `GITHUB_TOKEN` | Recommended | Fine-grained PAT for source fetch + PR creation |
-   | `GITHUB_REPO` | Recommended | `owner/repo` to correlate errors against |
-   | `LLM_PROVIDER` | Yes | `openai` or `anthropic` |
-   | `LLM_API_KEY` | Yes | Your provider's API key |
-   | `LLM_MODEL` | No | Defaults to `claude-sonnet-4-6`; override as needed |
-   | `OPENAI_API_BASE` | No | Custom base URL — enables Groq (`https://api.groq.com/openai/v1`) or NVIDIA NIM |
-   | `AUTOTRIAGE_API_KEY` | No | Set to require `X-API-Key` header on `POST /api/v1/logs` |
+ | Variable | Required | Description |
+ |---|---|---|
+ | `GITHUB_TOKEN` | Recommended | Fine-grained PAT for source fetch + PR creation |
+ | `GITHUB_REPO` | Recommended | `owner/repo` to correlate errors against |
+ | `LLM_PROVIDER` | Yes | `openai` or `anthropic` |
+ | `LLM_API_KEY` | Yes | Your provider's API key |
+ | `LLM_MODEL` | No | Defaults to `claude-sonnet-4-6`; override as needed |
+ | `OPENAI_API_BASE` | No | Custom base URL — enables Groq (`https://api.groq.com/openai/v1`) or NVIDIA NIM |
+ | `AUTOTRIAGE_API_KEY` | No | Set to require `X-API-Key` header on `POST /api/v1/logs` |
 
 4. **Run the server**
    ```bash
    uvicorn app.main:app --reload
-   ```
-   API: `http://localhost:8000` — Interactive docs: `http://localhost:8000/docs`
+ ```
+ API: `http://localhost:8000` — Interactive docs: `http://localhost:8000/docs`
 
 ### Docker (alternative)
 
@@ -401,6 +401,6 @@ curl http://localhost:8000/api/v1/analytics
 
 ---
 
-## 📄 License
+## License
 
 [MIT](LICENSE) — © 2026 Sabarish R.
