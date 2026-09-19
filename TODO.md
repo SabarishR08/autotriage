@@ -8,7 +8,7 @@
 - [x] Add type hints to any function missing them in app/services/triage_service.py
 - [x] Add a module-level docstring to app/api/logs.py explaining its purpose
 - [x] Add a module-level docstring to app/services/triage_service.py explaining its purpose
-- [ ] Create a GitHub Actions CI workflow at .github/workflows/ci.yml that installs requirements/dev.txt and runs pytest on every push and pull_request
+- [x] Create a GitHub Actions CI workflow at .github/workflows/ci.yml that installs requirements/dev.txt and runs pytest on every push and pull_request
 - [ ] Add input validation in app/api/logs.py to reject empty payloads with HTTP 422
 - [x] Add a top-level try/except in app/main.py that logs unhandled exceptions and exits 1
 - [x] Replace bare print() calls with logging.getLogger(__name__) in app/services/triage_service.py
