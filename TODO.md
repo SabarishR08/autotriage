@@ -12,7 +12,7 @@
 - [x] Add a top-level try/except in app/main.py that logs unhandled exceptions and exits 1
 - [x] Replace bare print() calls with logging.getLogger(__name__) in app/services/triage_service.py
 - [ ] Replace bare print() calls with logging.getLogger(__name__) in app/api/logs.py
-- [ ] Add a CONTRIBUTING.md with setup steps: clone, create venv, pip install -r requirements.txt
+- [x] Add a CONTRIBUTING.md with setup steps: clone, create venv, pip install -r requirements.txt
 - [ ] Add a .editorconfig file enforcing 4-space indent, UTF-8, and trailing newline
 - [ ] Add a .gitattributes file to normalise line endings (text=auto eol=lf)
 - [ ] Add a constants.py module in app/core/ with project-wide string literals
