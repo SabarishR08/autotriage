@@ -1,3 +1,5 @@
+import logging
+import sys
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -6,6 +8,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api import analytics, health, logs
 from app.core.config import get_settings
 from app.core.database import run_migrations
+
+logger = logging.getLogger(__name__)
 
 settings = get_settings()
 
@@ -24,11 +28,15 @@ async def lifespan(app: FastAPI) -> None:
     Yields:
         None
     """
-    # 1. Validate required config — exits with clear error if misconfigured
-    settings.validate()
-    # 2. Run Alembic migrations to head (safe to run on every startup)
-    run_migrations()
-    yield
+    try:
+        # 1. Validate required config — exits with clear error if misconfigured
+        settings.validate()
+        # 2. Run Alembic migrations to head (safe to run on every startup)
+        run_migrations()
+        yield
+    except Exception as exc:
+        logger.exception("Unhandled exception during application startup: %s", exc)
+        sys.exit(1)
 
 
 app = FastAPI(
