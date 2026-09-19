@@ -43,3 +43,17 @@
 - [ ] Add type hints to all function signatures in app/models/schemas.py
 - [ ] Add a module-level docstring to app/services/llm_provider.py describing the provider chain
 - [ ] Add input validation in app/api/analytics.py to reject unsupported query parameters with a 422 response
+
+
+<!-- backlog top-up 2026-09-19 batch 2 (file+verb deduped) -->
+- [ ] Add a module-level docstring to app/api/health.py describing the health surface
+- [ ] Add type hints to all function signatures in app/api/analytics.py
+- [ ] Add a module-level docstring to app/api/logs.py describing the log-ingestion endpoints
+- [ ] Add a module-level docstring to app/core/database.py describing the session lifecycle
+- [ ] Add a module-level docstring to app/core/config.py describing each settings group
+- [ ] Add type hints to all function signatures in app/services/triage_service.py
+- [ ] Add a module-level docstring to app/services/github_service.py describing the GitHub interactions
+- [ ] Add a module-level docstring to alembic/env.py describing the migration environment
+- [ ] Add type hints to all function signatures in app/api/logs.py
+- [ ] Add a module-level docstring to app/models/schemas.py describing the request/response models
+- [ ] Add a module-level docstring to app/api/analytics.py describing the analytics endpoints
