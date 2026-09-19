@@ -57,3 +57,8 @@
 - [ ] Add type hints to all function signatures in app/api/logs.py
 - [ ] Add a module-level docstring to app/models/schemas.py describing the request/response models
 - [ ] Add a module-level docstring to app/api/analytics.py describing the analytics endpoints
+
+
+<!-- backlog top-up 2026-09-19 batch 2b (file+verb deduped) -->
+- [ ] Add error handling with logging around LLM provider calls in app/services/llm_provider.py
+- [ ] Add a global exception handler in app/main.py returning structured JSON error responses
