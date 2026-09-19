@@ -9,7 +9,7 @@
 - [x] Add a module-level docstring to app/api/logs.py explaining its purpose
 - [x] Add a module-level docstring to app/services/triage_service.py explaining its purpose
 - [ ] Add input validation in app/api/logs.py to reject empty payloads with HTTP 422
-- [ ] Add a top-level try/except in app/main.py that logs unhandled exceptions and exits 1
+- [x] Add a top-level try/except in app/main.py that logs unhandled exceptions and exits 1
 - [ ] Replace bare print() calls with logging.getLogger(__name__) in app/services/triage_service.py
 - [ ] Replace bare print() calls with logging.getLogger(__name__) in app/api/logs.py
 - [ ] Add a CONTRIBUTING.md with setup steps: clone, create venv, pip install -r requirements.txt
