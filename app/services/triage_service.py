@@ -11,12 +11,12 @@ from app.models.error_log import ErrorLog
 from app.services.github_service import GitHubService, GitHubServiceError
 from app.services.llm_provider import LLMProviderError, get_llm_provider
 
-inger = logging.getLogger("autotriage.triage")
+logger = logging.getLogger(__name__)
 
 def run_triage(db: Session, error_log_id: str, open_pr: bool = False) -> ErrorLog:
     record = db.query(ErrorLog).filter(ErrorLog.id == error_log_id).first()
     if record is None:
-        raise ValueError(f"No error log found with id={error_log_id")
+        raise ValueError(f"No error log found with id={error_log_id}")
     record.status = "analyzing"
     db.commit()
     try:
