@@ -32,3 +32,14 @@
 - [ ] Add a confidence_score float field (0.0-1.0) to the triage result in app/models/schemas.py
 - [ ] Add an error_code field to the triage result schema in app/models/schemas.py
 - [ ] Add a pydantic model for the triage result in app/models/schemas.py replacing plain dict returns
+
+
+<!-- backlog top-up 2026-09-19 (file-verified) -->
+- [ ] Add a module-level docstring to app/services/triage_service.py describing the triage pipeline
+- [ ] Add type hints to all function signatures in app/services/github_service.py
+- [ ] Extract the SQLAlchemy engine and SessionLocal setup in app/core/database.py into clearly documented constants
+- [ ] Wrap the FastAPI app assembly in app/main.py so module import stays side-effect free
+- [ ] Add a module-level docstring to app/models/error_log.py describing the error-log schema
+- [ ] Add type hints to all function signatures in app/models/schemas.py
+- [ ] Add a module-level docstring to app/services/llm_provider.py describing the provider chain
+- [ ] Add input validation in app/api/analytics.py to reject unsupported query parameters with a 422 response
