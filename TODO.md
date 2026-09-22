@@ -15,7 +15,7 @@
 - [ ] Replace bare print() calls with logging.getLogger(__name__) in app/api/logs.py
 - [x] Add a CONTRIBUTING.md with setup steps: clone, create venv, pip install -r requirements.txt
 - [x] Add a .editorconfig file enforcing 4-space indent, UTF-8, and trailing newline
-- [ ] Add a .gitattributes file to normalise line endings (text=auto eol=lf)
+- [x] Add a .gitattributes file to normalise line endings (text=auto eol=lf)
 - [ ] Add a constants.py module in app/core/ with project-wide string literals
 - [ ] Add __all__ exports to app/services/__init__.py
 - [ ] Add __all__ exports to app/api/__init__.py
