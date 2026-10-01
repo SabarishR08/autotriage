@@ -17,7 +17,7 @@
 - [x] Add a .editorconfig file enforcing 4-space indent, UTF-8, and trailing newline
 - [x] Add a .gitattributes file to normalise line endings (text=auto eol=lf)
 - [x] Add a constants.py module in app/core/ with project-wide string literals
-- [ ] Add __all__ exports to app/services/__init__.py
+- [x] Add __all__ exports to app/services/__init__.py
 - [ ] Add __all__ exports to app/api/__init__.py
 - [ ] Add a simple healthcheck endpoint to app/api/health.py returning version from app/__init__.py
 - [ ] Extract magic numbers and hardcoded timeouts into named constants in app/core/config.py
