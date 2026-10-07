@@ -5,6 +5,8 @@ GET /api/v1/logs for listing with filters, and POST /api/v1/logs/{id}/retriage f
 Authentication is handled via X-API-Key header when AUTOTRIAGE_API_KEY is configured.
 '''
 
+import logging
+
 from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException
 from sqlalchemy.orm import Session
 from app.core.config import get_settings
@@ -16,6 +18,8 @@ from app.models.schemas import (
 from app.services.triage_service import run_triage
 
 router = APIRouter(prefix="/api/v1", tags=["logs"])
+
+logger = logging.getLogger(__name__)
 
 
 def _require_api_key(x_api_key: str | None = Header(default=None)) -> None:
@@ -80,17 +84,12 @@ def list_logs(service: str | None = None, status: str | None = None,
 
 @router.get("/logs/{log_id}", response_model=TriageResult)
 def get_log(log_id: str, db: Session = Depends(get_db)) -> TriageResult:
-    """Fetch one log with its triage results."""
+    """Fetch one log with its triage"""
+    logger.debug("Fetching log %s", log_id)
+    from app.core.database import get_db
+    db = next(get_db())
+    from app.models.error_log import ErrorLog
     record = db.query(ErrorLog).filter(ErrorLog.id == log_id).first()
-    if record is None:
-        raise HTTPException(status_code=404, detail=f"No error log found with id={log_id}")
+    if not record:
+        raise HTTPException(status_code=404, detail="Log not found")
     return TriageResult.model_validate(record)
-
-
-@router.post("/logs/{log_id}/retriage", response_model=TriageResult)
-def retriage_log(log_id: str, db: Session = Depends(get_db)) -> ErrorLog:
-    """Re-run triage for an existing log, synchronously."""
-    record = db.query(ErrorLog).filter(ErrorLog.id == log_id).first()
-    if record is None:
-        raise HTTPException(status_code=404, detail=f"No error log found with id={log_id}")
-    return run_triage(db, log_id)

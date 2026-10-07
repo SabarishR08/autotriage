@@ -12,7 +12,7 @@
 - [ ] Add input validation in app/api/logs.py to reject empty payloads with HTTP 422
 - [x] Add a top-level try/except in app/main.py that logs unhandled exceptions and exits 1
 - [x] Replace bare print() calls with logging.getLogger(__name__) in app/services/triage_service.py
-- [ ] Replace bare print() calls with logging.getLogger(__name__) in app/api/logs.py
+- [x] Replace bare print() calls with logging.getLogger(__name__) in app/api/logs.py
 - [x] Add a CONTRIBUTING.md with setup steps: clone, create venv, pip install -r requirements.txt
 - [x] Add a .editorconfig file enforcing 4-space indent, UTF-8, and trailing newline
 - [x] Add a .gitattributes file to normalise line endings (text=auto eol=lf)
