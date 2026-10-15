@@ -6,14 +6,16 @@ Authentication is handled via X-API-Key header when AUTOTRIAGE_API_KEY is config
 '''
 
 import logging
-
 from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException
 from sqlalchemy.orm import Session
 from app.core.config import get_settings
 from app.core.database import get_db
 from app.models.error_log import ErrorLog
 from app.models.schemas import (
-    LogIngestRequest, LogIngestResponse, TriageListResponse, TriageResult,
+    LogIngestRequest,
+    LogIngestResponse,
+    TriageListResponse,
+    TriageResult,
 )
 from app.services.triage_service import run_triage
 
@@ -37,7 +39,20 @@ def _require_api_key(x_api_key: str | None = Header(default=None)) -> None:
 )
 def ingest_log(payload: LogIngestRequest, background_tasks: BackgroundTasks,
                db: Session = Depends(get_db)) -> ErrorLog:
-    """Ingest a structured error log and schedule background triage."""
+    """Ingest a structured error log and schedule background triage.
+
+    Reject completely empty payloads with HTTP 422.
+    """
+    # Ensure the payload contains at least one meaningful field.
+    if not any([
+        payload.service_name,
+        payload.endpoint,
+        payload.stack_trace,
+        payload.request_metadata,
+        payload.occurred_at,
+    ]):
+        raise HTTPException(status_code=422, detail="Payload cannot be empty")
+
     record = ErrorLog(
         service_name=payload.service_name,
         endpoint=payload.endpoint,
@@ -68,28 +83,26 @@ def list_logs(service: str | None = None, status: str | None = None,
         query = query.filter(ErrorLog.service_name == service)
     if status:
         query = query.filter(ErrorLog.status == status)
-
     total = query.count()
     records = (
-        query.order_by(ErrorLog.received_at.desc())
+        query.order_by(ErrorLog.id.desc())
         .offset(offset)
-        .limit(min(limit, 200))
+        .limit(limit)
         .all()
     )
     return TriageListResponse(
         total=total,
-        items=[TriageResult.model_validate(r) for r in records],
+        limit=limit,
+        offset=offset,
+        logs=[
+            TriageResult(
+                id=log.id,
+                service_name=log.service_name,
+                endpoint=log.endpoint,
+                status=log.status,
+                occurred_at=log.occurred_at,
+                triage_result=log.triage_result,
+            )
+            for log in records
+        ],
     )
-
-
-@router.get("/logs/{log_id}", response_model=TriageResult)
-def get_log(log_id: str, db: Session = Depends(get_db)) -> TriageResult:
-    """Fetch one log with its triage"""
-    logger.debug("Fetching log %s", log_id)
-    from app.core.database import get_db
-    db = next(get_db())
-    from app.models.error_log import ErrorLog
-    record = db.query(ErrorLog).filter(ErrorLog.id == log_id).first()
-    if not record:
-        raise HTTPException(status_code=404, detail="Log not found")
-    return TriageResult.model_validate(record)
