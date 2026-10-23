@@ -18,6 +18,11 @@ from functools import lru_cache
 
 from dotenv import load_dotenv
 
+# Default constants
+DEFAULT_PORT: int = 8000
+DEFAULT_HTTP_TIMEOUT: float = 30.0
+DEFAULT_GITHUB_TIMEOUT: float = 10.0
+
 # override=False means real env vars always win over .env file.
 # This is correct for containers: Docker/Render inject the real values;
 # we don't want a stale .env file (if somehow present) to shadow them.
@@ -25,6 +30,11 @@ load_dotenv(override=False)
 
 
 class Settings:
+    # --- Default Constants ---
+    DEFAULT_PORT: int = DEFAULT_PORT
+    DEFAULT_HTTP_TIMEOUT: float = DEFAULT_HTTP_TIMEOUT
+    DEFAULT_GITHUB_TIMEOUT: float = DEFAULT_GITHUB_TIMEOUT
+
     # --- App ---
     APP_NAME: str = "AutoTriage"
     APP_ENV: str = os.getenv("APP_ENV", "development")
@@ -38,6 +48,9 @@ class Settings:
     # --- GitHub ---
     GITHUB_TOKEN: str | None = os.getenv("GITHUB_TOKEN")
     GITHUB_REPO: str | None = os.getenv("GITHUB_REPO")
+    GITHUB_TIMEOUT_SECONDS: float = float(
+        os.getenv("GITHUB_TIMEOUT_SECONDS", str(DEFAULT_GITHUB_TIMEOUT))
+    )
 
     # --- LLM ---
     LLM_PROVIDER: str = os.getenv("LLM_PROVIDER", "anthropic")
@@ -45,10 +58,13 @@ class Settings:
     LLM_MODEL: str = os.getenv("LLM_MODEL", "claude-sonnet-4-6")
     # Custom base URL for OpenAI-compatible providers (Groq, NVIDIA NIM, etc.)
     OPENAI_API_BASE: str | None = os.getenv("OPENAI_API_BASE")
+    LLM_TIMEOUT_SECONDS: float = float(
+        os.getenv("LLM_TIMEOUT_SECONDS", str(DEFAULT_HTTP_TIMEOUT))
+    )
 
     # --- Server ---
     HOST: str = os.getenv("HOST", "0.0.0.0")
-    PORT: int = int(os.getenv("PORT", "8000"))
+    PORT: int = int(os.getenv("PORT", str(DEFAULT_PORT)))
 
     # --- CORS ---
     # Comma-separated list of allowed origins.
@@ -69,44 +85,24 @@ class Settings:
         """
         Validate config at startup.
 
-        Hard errors (sys.exit): missing secrets that make the app non-functional.
-        Warnings (stderr only): security recommendations that don't block operation.
+        Hard errors (sys.exit): missing required env vars in production.
         """
-        errors: list[str] = []
-        warnings: list[str] = []
-
-        # Hard error — app literally cannot triage without this
-        if not self.LLM_API_KEY:
-            errors.append(
-                "LLM_API_KEY is not set. "
-                "AutoTriage requires a provider API key to run triage."
-            )
-
         if self.APP_ENV == "production":
-            # Warn but don't block — wildcard CORS is acceptable while there
-            # is no frontend yet; tighten once a domain exists.
-            if self.ALLOWED_ORIGINS == ["*"]:
-                warnings.append(
-                    "ALLOWED_ORIGINS is '*'. "
-                    "Set it to your frontend domain(s) before going public."
+            missing = []
+            if not self.GITHUB_TOKEN:
+                missing.append("GITHUB_TOKEN")
+            if not self.LLM_API_KEY:
+                missing.append("LLM_API_KEY")
+            if missing:
+                sys.stderr.write(
+                    f"FATAL: Missing required environment variables for production: {', '.join(missing)}\n"
                 )
-            # Warn but don't block — ingestion endpoint may be intentionally open
-            # for an internal-only deployment.
-            if not self.AUTOTRIAGE_API_KEY:
-                warnings.append(
-                    "AUTOTRIAGE_API_KEY is not set. "
-                    "The ingestion endpoint is open to anyone."
-                )
-
-        for msg in warnings:
-            print(f"[AutoTriage] STARTUP WARNING: {msg}", file=sys.stderr)
-
-        if errors:
-            for msg in errors:
-                print(f"[AutoTriage] STARTUP ERROR: {msg}", file=sys.stderr)
-            sys.exit(1)
+                sys.exit(1)
 
 
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
+
+
+settings = get_settings()
