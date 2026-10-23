@@ -21,7 +21,7 @@
 - [x] Add __all__ exports to app/api/__init__.py
 - [x] Add a simple healthcheck endpoint to app/api/health.py returning version from app/__init__.py
 - [x] Extract magic numbers and hardcoded timeouts into named constants in app/core/config.py
-- [ ] Add a requirements-dev.txt with pytest and ruff as dev dependencies
+- [x] Add a requirements-dev.txt with pytest and ruff as dev dependencies
 - [ ] Add response time tracking to app/api/logs.py: log elapsed ms for each request
 - [ ] Add a truncate_log(text, max_chars=4000) utility to app/services/triage_service.py
 - [ ] Add a deduplicate_errors() utility to app/services/triage_service.py
