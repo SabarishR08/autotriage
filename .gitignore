@@ -25,3 +25,5 @@ credentials/
 
 # Graphify outputs (generated, not source)
 graphify-out/
+
+convocontext.txt

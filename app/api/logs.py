@@ -103,15 +103,15 @@ def ingest_log(
     return LogIngestResponse(
         id=record.id,
         status=record.status,
+        message="Log ingested. Triage is running in the background.",
     )
 
 
 @router.get(
     "/logs/{log_id}",
     response_model=TriageResult,
-    dependencies=[Depends(_require_api_key)],
 )
-def get_log(log_id: int, db: Session = Depends(get_db)) -> TriageResult:
+def get_log(log_id: str, db: Session = Depends(get_db)) -> TriageResult:
     """Retrieve a single error log and its triage status by ID."""
     record = db.query(ErrorLog).filter(ErrorLog.id == log_id).first()
     if not record:
@@ -122,24 +122,25 @@ def get_log(log_id: int, db: Session = Depends(get_db)) -> TriageResult:
 @router.get(
     "/logs",
     response_model=TriageListResponse,
-    dependencies=[Depends(_require_api_key)],
 )
 def list_logs(
     service_name: str | None = None,
+    service: str | None = None,
     status: str | None = None,
-    limit: int = 10,
+    limit: int = 50,
     offset: int = 0,
     db: Session = Depends(get_db),
 ) -> TriageListResponse:
-    """List error logs with optional filtering by service_name and status."""
+    """List error logs with optional filtering by service_name/service and status."""
     query = db.query(ErrorLog)
-    if service_name:
-        query = query.filter(ErrorLog.service_name == service_name)
+    target_service = service or service_name
+    if target_service:
+        query = query.filter(ErrorLog.service_name == target_service)
     if status:
         query = query.filter(ErrorLog.status == status)
     total = query.count()
-    items = query.offset(offset).limit(limit).all()
-    return TriageListResponse(items=items, total=total, limit=limit, offset=offset)
+    items = query.order_by(ErrorLog.received_at.desc()).offset(offset).limit(limit).all()
+    return TriageListResponse(items=items, total=total)
 
 
 @router.post(
@@ -148,7 +149,7 @@ def list_logs(
     dependencies=[Depends(_require_api_key)],
 )
 def retriage_log(
-    log_id: int,
+    log_id: str,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
 ) -> LogIngestResponse:
@@ -160,4 +161,8 @@ def retriage_log(
     db.commit()
     db.refresh(record)
     background_tasks.add_task(run_triage, db, record.id)
-    return LogIngestResponse(id=record.id, status=record.status)
+    return LogIngestResponse(
+        id=record.id,
+        status=record.status,
+        message="Triage re-triggered successfully.",
+    )

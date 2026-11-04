@@ -20,7 +20,7 @@ class LogIngestRequest(BaseModel):
 class LogIngestResponse(BaseModel):
     id: str
     status: str
-    message: str
+    message: str = "Log ingested. Triage is running in the background."
 
 
 class TriageResult(BaseModel):
