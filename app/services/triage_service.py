@@ -13,6 +13,14 @@ from app.services.llm_provider import LLMProviderError, get_llm_provider
 
 logger = logging.getLogger(__name__)
 
+
+def truncate_log(text: str, max_chars: int = 4000) -> str:
+    """Truncate log text if it exceeds max_chars length."""
+    if not text or len(text) <= max_chars:
+        return text
+    return text[:max_chars]
+
+
 def run_triage(db: Session, error_log_id: str, open_pr: bool = False) -> ErrorLog:
     record = db.query(ErrorLog).filter(ErrorLog.id == error_log_id).first()
     if record is None:
@@ -21,10 +29,11 @@ def run_triage(db: Session, error_log_id: str, open_pr: bool = False) -> ErrorLo
     db.commit()
     try:
         github = GitHubService()
-        file_paths = github.extract_file_paths(record.stack_trace)
+        stack_trace = truncate_log(record.stack_trace or "")
+        file_paths = github.extract_file_paths(stack_trace)
         source_context = github.fetch_source_context(file_paths)
         llm = get_llm_provider()
-        result = llm.analyze(record.stack_trace, source_context)
+        result = llm.analyze(stack_trace, source_context)
         record.root_cause = result.get("root_cause")
         record.affected_files = result.get("affected_files")
         record.confidence = result.get("confidence")
@@ -36,10 +45,10 @@ def run_triage(db: Session, error_log_id: str, open_pr: bool = False) -> ErrorLo
             try:
                 pr_url = github.open_pull_request(
                     title=f"AutoTriage fix: {record.service_name} — {record.endpoint}",
-                    body=
-                    ("**Root cause:** {record.root_cause}\n\n"
-                     "**Suggested fix:** {record.suggested_fix}\n\n"
-                     "_Opened automatically by AutoTriage from error {record.id}._"
+                    body=(
+                        f"**Root cause:** {record.root_cause}\n\n"
+                        f"**Suggested fix:** {record.suggested_fix}\n\n"
+                        f"_Opened automatically by AutoTriage from error {record.id}._"
                     ),
                     branch_name=f"autotriage/fix-{record.id[:8]}",
                     patch_diff=record.patch_diff,
@@ -53,12 +62,9 @@ def run_triage(db: Session, error_log_id: str, open_pr: bool = False) -> ErrorLo
         record.status = "failed"
         record.error_detail = str(exc)
         logger.error("Triage failed for %s: %s", error_log_id, exc)
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         record.status = "failed"
-        record.error_detail = f"Unexpected error: {exc}"
-        logger.exception("Unexpected triage failure for %s", error_log_id)
-    finally:
-        record.received_at = record.received_at or datetime.now(timezone.utc)
-        db.commit()
-        db.refresh(record)
+        record.error_detail = str(exc)
+        logger.error("Unexpected error during triage for %s: %s", error_log_id, exc)
+    db.commit()
     return record

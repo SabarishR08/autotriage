@@ -23,7 +23,7 @@
 - [x] Extract magic numbers and hardcoded timeouts into named constants in app/core/config.py
 - [x] Add a requirements-dev.txt with pytest and ruff as dev dependencies
 - [x] Add response time tracking to app/api/logs.py: log elapsed ms for each request
-- [ ] Add a truncate_log(text, max_chars=4000) utility to app/services/triage_service.py
+- [x] Add a truncate_log(text, max_chars=4000) utility to app/services/triage_service.py
 - [ ] Add a deduplicate_errors() utility to app/services/triage_service.py
 - [ ] Add a stack_trace_hash() function in app/services/triage_service.py using hashlib
 - [ ] Add a rate_limit_aware_call() wrapper in app/services/llm_provider.py that sleeps on 429
