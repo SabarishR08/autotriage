@@ -4,8 +4,9 @@ This module coordinates the error triage workflow by extracting source context
 from GitHub, analyzing stack traces with an LLM, and optionally creating pull
 requests with suggested fixes.
 """
+import hashlib
 import logging
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Optional, Union
 from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 from app.models.error_log import ErrorLog
@@ -20,6 +21,13 @@ def truncate_log(text: str, max_chars: int = 4000) -> str:
     if not text or len(text) <= max_chars:
         return text
     return text[:max_chars]
+
+
+def stack_trace_hash(stack_trace: Optional[str]) -> str:
+    """Generate a SHA-256 hash for a given stack trace string."""
+    if not stack_trace:
+        return ""
+    return hashlib.sha256(stack_trace.strip().encode("utf-8")).hexdigest()
 
 
 def deduplicate_errors(
@@ -66,29 +74,24 @@ def run_triage(db: Session, error_log_id: str, open_pr: bool = False) -> ErrorLo
         result = llm.analyze(stack_trace, source_context)
         record.root_cause = result.get("root_cause")
         record.affected_files = result.get("affected_files")
-        record.confidence = result.get("confidence")
         record.suggested_fix = result.get("suggested_fix")
-        record.patch_diff = result.get("patch_diff")
         record.status = "triaged"
-        
-        if open_pr and record.patch_diff and github.is_configured:
+        record.triaged_at = datetime.now(timezone.utc)
+        if open_pr and record.suggested_fix and file_paths:
             try:
-                pr_url = github.open_pull_request(
-                    title=f"AutoTriage fix: {record.service_name} — {record.endpoint}",
-                    body=(
-                        f"**Root cause:** {record.root_cause}\n\n"
-                        f"**Suggested fix:** {record.suggested_fix}\n\n"
-                        f"_Opened automatically by AutoTriage from error {record.id}._"
-                    ),
-                    branch_name=f"autotriage/fix-{record.id[:8]}",
-                    patch_diff=record.patch_diff,
+                pr_url = github.create_fix_pull_request(
+                    file_paths=file_paths,
+                    fix_code=record.suggested_fix,
+                    issue_title=f"Fix: {record.exception_type} in {record.service_name}",
+                    issue_body=f"Root cause: {record.root_cause}",
                 )
-                record.pull_request_url = pr_url
-            except GitHubServiceError as exc:
-                logger.warning(f"PR creation failed: {exc}")
-    except (LLMProviderError, Exception) as exc:
-        logger.error(f"Triage failed for error {error_log_id}: {exc}")
+                record.pr_url = pr_url
+            except GitHubServiceError as err:
+                logger.error("Failed to create PR: %s", err)
+        db.commit()
+    except Exception as err:
+        db.rollback()
         record.status = "failed"
         db.commit()
-        raise
+        raise err
     return record
