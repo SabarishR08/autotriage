@@ -90,8 +90,8 @@ def run_triage(db: Session, error_log_id: str, open_pr: bool = False) -> ErrorLo
                 logger.error("Failed to create PR: %s", err)
         db.commit()
     except Exception as err:
+        logger.error("Triage failed for error %s: %s", error_log_id, err)
         db.rollback()
         record.status = "failed"
         db.commit()
-        raise err
     return record

@@ -10,7 +10,7 @@ from sqlalchemy import engine_from_config, pool
 # ---------------------------------------------------------------------------
 from app.core.config import get_settings  # noqa: E402
 from app.core.database import Base  # noqa: E402
-import app.models.error_log  # noqa: F401, E402  — registers model on Base
+import app.models  # noqa: F401, E402  — registers all models on Base
 
 settings = get_settings()
 
