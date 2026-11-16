@@ -15,6 +15,7 @@ from fastapi import (
     Depends,
     Header,
     HTTPException,
+    Query,
     Request,
     Response,
     status,
@@ -80,67 +81,101 @@ def ingest_log(
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
 ) -> LogIngestResponse:
-    """Ingest a structured error log and schedule background triage."""
-    if not payload.dict(exclude_unset=True):
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Payload cannot be empty",
-        )
-
-    record = ErrorLog(
+    """Ingest a structured error log and queue background triage analysis."""
+    db_log = ErrorLog(
         service_name=payload.service_name,
-        endpoint=payload.endpoint,
+        environment=payload.environment,
+        error_message=payload.error_message,
         stack_trace=payload.stack_trace,
-        request_metadata=payload.request_metadata,
-        occurred_at=payload.occurred_at,
+        metadata_json=payload.metadata,
         status="pending",
     )
-    db.add(record)
+    db.add(db_log)
     db.commit()
-    db.refresh(record)
+    db.refresh(db_log)
 
-    background_tasks.add_task(run_triage, db, record.id)
+    background_tasks.add_task(run_triage, db_log.id)
+
     return LogIngestResponse(
-        id=record.id,
-        status=record.status,
-        message="Log ingested. Triage is running in the background.",
+        id=db_log.id,
+        status=db_log.status,
+        message="Log ingested successfully",
     )
 
 
 @router.get(
     "/logs/{log_id}",
     response_model=TriageResult,
+    dependencies=[Depends(_require_api_key)],
 )
-def get_log(log_id: str, db: Session = Depends(get_db)) -> TriageResult:
-    """Retrieve a single error log and its triage status by ID."""
-    record = db.query(ErrorLog).filter(ErrorLog.id == log_id).first()
-    if not record:
-        raise HTTPException(status_code=404, detail="Log not found")
-    return record
+def get_triage_result(
+    log_id: int,
+    db: Session = Depends(get_db),
+) -> TriageResult:
+    """Retrieve triage results for a specific error log."""
+    log = db.query(ErrorLog).filter(ErrorLog.id == log_id).first()
+    if not log:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Log not found",
+        )
+    return TriageResult(
+        id=log.id,
+        service_name=log.service_name,
+        environment=log.environment,
+        error_message=log.error_message,
+        stack_trace=log.stack_trace,
+        status=log.status,
+        root_cause=log.root_cause,
+        suggested_fix=log.suggested_fix,
+        severity=log.severity,
+        confidence_score=log.confidence_score,
+        created_at=log.created_at,
+        triaged_at=log.triaged_at,
+    )
 
 
 @router.get(
     "/logs",
     response_model=TriageListResponse,
+    dependencies=[Depends(_require_api_key)],
 )
 def list_logs(
-    service_name: str | None = None,
-    service: str | None = None,
-    status: str | None = None,
-    limit: int = 50,
-    offset: int = 0,
+    service_name: str | None = Query(default=None),
+    status: str | None = Query(default=None),
+    limit: int = Query(default=50, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
     db: Session = Depends(get_db),
 ) -> TriageListResponse:
-    """List error logs with optional filtering by service_name/service and status."""
+    """List ingested logs with optional filtering by service name or status."""
     query = db.query(ErrorLog)
-    target_service = service or service_name
-    if target_service:
-        query = query.filter(ErrorLog.service_name == target_service)
+    if service_name:
+        query = query.filter(ErrorLog.service_name == service_name)
     if status:
         query = query.filter(ErrorLog.status == status)
+
     total = query.count()
-    items = query.order_by(ErrorLog.received_at.desc()).offset(offset).limit(limit).all()
-    return TriageListResponse(items=items, total=total)
+    logs = query.order_by(ErrorLog.created_at.desc()).offset(offset).limit(limit).all()
+
+    items = [
+        TriageResult(
+            id=log.id,
+            service_name=log.service_name,
+            environment=log.environment,
+            error_message=log.error_message,
+            stack_trace=log.stack_trace,
+            status=log.status,
+            root_cause=log.root_cause,
+            suggested_fix=log.suggested_fix,
+            severity=log.severity,
+            confidence_score=log.confidence_score,
+            created_at=log.created_at,
+            triaged_at=log.triaged_at,
+        )
+        for log in logs
+    ]
+
+    return TriageListResponse(total=total, items=items)
 
 
 @router.post(
@@ -149,20 +184,26 @@ def list_logs(
     dependencies=[Depends(_require_api_key)],
 )
 def retriage_log(
-    log_id: str,
+    log_id: int,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
 ) -> LogIngestResponse:
-    """Re-trigger triage processing for an existing log entry."""
-    record = db.query(ErrorLog).filter(ErrorLog.id == log_id).first()
-    if not record:
-        raise HTTPException(status_code=404, detail="Log not found")
-    record.status = "pending"
+    """Re-trigger automated triage analysis for an existing log."""
+    log = db.query(ErrorLog).filter(ErrorLog.id == log_id).first()
+    if not log:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Log not found",
+        )
+
+    log.status = "pending"
     db.commit()
-    db.refresh(record)
-    background_tasks.add_task(run_triage, db, record.id)
+    db.refresh(log)
+
+    background_tasks.add_task(run_triage, log.id)
+
     return LogIngestResponse(
-        id=record.id,
-        status=record.status,
-        message="Triage re-triggered successfully.",
+        id=log.id,
+        status=log.status,
+        message="Re-triage initiated successfully",
     )
