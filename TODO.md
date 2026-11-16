@@ -28,7 +28,7 @@
 - [x] Add a stack_trace_hash() function in app/services/triage_service.py using hashlib
 - [x] Add a rate_limit_aware_call() wrapper in app/services/llm_provider.py that sleeps on 429
 - [ ] Add a simple retry helper (max 3 attempts, exponential backoff) in app/services/llm_provider.py
-- [ ] Normalise exception messages to sentence case in app/api/logs.py
+- [x] Normalise exception messages to sentence case in app/api/logs.py
 - [ ] Replace any bare except: with except Exception as e: in app/services/triage_service.py
 - [ ] Add a confidence_score float field (0.0-1.0) to the triage result in app/models/schemas.py
 - [ ] Add an error_code field to the triage result schema in app/models/schemas.py
