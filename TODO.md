@@ -26,7 +26,7 @@
 - [x] Add a truncate_log(text, max_chars=4000) utility to app/services/triage_service.py
 - [x] Add a deduplicate_errors() utility to app/services/triage_service.py
 - [x] Add a stack_trace_hash() function in app/services/triage_service.py using hashlib
-- [ ] Add a rate_limit_aware_call() wrapper in app/services/llm_provider.py that sleeps on 429
+- [x] Add a rate_limit_aware_call() wrapper in app/services/llm_provider.py that sleeps on 429
 - [ ] Add a simple retry helper (max 3 attempts, exponential backoff) in app/services/llm_provider.py
 - [ ] Normalise exception messages to sentence case in app/api/logs.py
 - [ ] Replace any bare except: with except Exception as e: in app/services/triage_service.py
