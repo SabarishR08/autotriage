@@ -62,6 +62,27 @@ def rate_limit_aware_call(
                 raise
 
 
+def retry_with_backoff(
+    func: Callable[..., T],
+    *args: Any,
+    max_attempts: int = 3,
+    backoff_factor: float = 1.0,
+    retry_exceptions: tuple[type[Exception], ...] = (Exception,),
+    **kwargs: Any,
+) -> T:
+    """Execute callable with exponential backoff retry logic (default max 3 attempts)."""
+    attempt = 0
+    while attempt < max_attempts:
+        try:
+            return func(*args, **kwargs)
+        except retry_exceptions:
+            attempt += 1
+            if attempt >= max_attempts:
+                raise
+            time.sleep(backoff_factor * (2 ** (attempt - 1)))
+    return func(*args, **kwargs)
+
+
 class BaseLLMProvider(ABC):
     @abstractmethod
     def analyze(self, stack_trace: str, source_context: str) -> dict[str, Any]:
@@ -74,104 +95,72 @@ class OpenAIProvider(BaseLLMProvider):
             from openai import OpenAI
         except ImportError as exc:  # pragma: no cover
             raise LLMProviderError(
-                "openai package not installed. Run: pip install openai"
+                "openai package not installed"
             ) from exc
-        kwargs: dict = {"api_key": api_key}
-        if base_url:
-            kwargs["base_url"] = base_url
-        self._client = OpenAI(**kwargs)
-        self._model = model
+        self.client = OpenAI(api_key=api_key, base_url=base_url)
+        self.model = model
 
     def analyze(self, stack_trace: str, source_context: str) -> dict[str, Any]:
-        response = rate_limit_aware_call(
-            self._client.chat.completions.create,
-            model=self._model,
-            messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {
-                    "role": "user",
-                    "content": f"Stack trace:\n{stack_trace}\n\nSource context:\n{source_context}",
-                },
-            ],
-            temperature=0,
-        )
-        return _parse_json_response(response.choices[0].message.content)
+        prompt = f"Stack Trace:\n{stack_trace}\n\nSource Context:\n{source_context}"
+        try:
+            def _call():
+                return self.client.chat.completions.create(
+                    model=self.model,
+                    messages=[
+                        {"role": "system", "content": SYSTEM_PROMPT},
+                        {"role": "user", "content": prompt},
+                    ],
+                    temperature=0.1,
+                )
+
+            response = rate_limit_aware_call(_call)
+            content = response.choices[0].message.content or "{}"
+            return json.loads(content)
+        except Exception as exc:
+            raise LLMProviderError(f"OpenAI analysis failed: {exc}") from exc
 
 
 class AnthropicProvider(BaseLLMProvider):
     def __init__(self, api_key: str, model: str):
         try:
-            import anthropic
+            from anthropic import Anthropic
         except ImportError as exc:  # pragma: no cover
             raise LLMProviderError(
-                "anthropic package not installed. Run: pip install anthropic"
+                "anthropic package not installed"
             ) from exc
-        self._client = anthropic.Anthropic(api_key=api_key)
-        self._model = model
+        self.client = Anthropic(api_key=api_key)
+        self.model = model
 
     def analyze(self, stack_trace: str, source_context: str) -> dict[str, Any]:
-        response = rate_limit_aware_call(
-            self._client.messages.create,
-            model=self._model,
-            max_tokens=2048,
-            system=SYSTEM_PROMPT,
-            messages=[
-                {
-                    "role": "user",
-                    "content": f"Stack trace:\n{stack_trace}\n\nSource context:\n{source_context}",
-                }
-            ],
-            temperature=0,
-        )
-        content = response.content[0].text
-        return _parse_json_response(content)
+        prompt = f"Stack Trace:\n{stack_trace}\n\nSource Context:\n{source_context}"
+        try:
+            def _call():
+                return self.client.messages.create(
+                    model=self.model,
+                    max_tokens=2048,
+                    system=SYSTEM_PROMPT,
+                    messages=[{"role": "user", "content": prompt}],
+                )
 
-
-def _parse_json_response(content: str | None) -> dict[str, Any]:
-    if not content:
-        raise LLMProviderError("Empty response from LLM provider")
-    cleaned = content.strip()
-    if cleaned.startswith("```"):
-        lines = cleaned.splitlines()
-        if lines[0].startswith("```"):
-            lines = lines[1:]
-        if lines and lines[-1].startswith("```"):
-            lines = lines[:-1]
-        cleaned = "\n".join(lines).strip()
-    try:
-        data = json.loads(cleaned)
-    except json.JSONDecodeError as exc:
-        raise LLMProviderError(f"Failed to parse LLM JSON response: {exc}") from exc
-
-    required_keys = {
-        "root_cause",
-        "affected_files",
-        "confidence",
-        "suggested_fix",
-        "patch_diff",
-    }
-    if not isinstance(data, dict) or not required_keys.issubset(data.keys()):
-        raise LLMProviderError(f"LLM response missing required keys: {cleaned}")
-    return data
+            response = rate_limit_aware_call(_call)
+            content = response.content[0].text
+            return json.loads(content)
+        except Exception as exc:
+            raise LLMProviderError(f"Anthropic analysis failed: {exc}") from exc
 
 
 def get_llm_provider() -> BaseLLMProvider:
     settings = get_settings()
-    provider = (settings.LLM_PROVIDER or "openai").lower()
-    api_key = settings.LLM_API_KEY
-    if not api_key:
-        raise LLMProviderError("LLM_API_KEY environment variable is not set")
-    model = settings.LLM_MODEL
+    provider = settings.LLM_PROVIDER.lower()
     if provider == "openai":
         return OpenAIProvider(
-            api_key=api_key,
-            model=model or "gpt-4o",
-            base_url=settings.LLM_BASE_URL,
+            api_key=settings.LLM_API_KEY,
+            model=settings.LLM_MODEL or "gpt-4o",
         )
     elif provider == "anthropic":
         return AnthropicProvider(
-            api_key=api_key,
-            model=model or "claude-3-5-sonnet-20241022",
+            api_key=settings.LLM_API_KEY,
+            model=settings.LLM_MODEL or "claude-3-5-sonnet-20241022",
         )
     else:
-        raise LLMProviderError(f"Unsupported LLM_PROVIDER: '{provider}'")
+        raise LLMProviderError(f"Unsupported LLM provider: {provider}")
