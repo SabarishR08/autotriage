@@ -69,29 +69,45 @@ def run_triage(db: Session, error_log_id: str, open_pr: bool = False) -> ErrorLo
         github = GitHubService()
         stack_trace = truncate_log(record.stack_trace or "")
         file_paths = github.extract_file_paths(stack_trace)
-        source_context = github.fetch_source_context(file_paths)
-        llm = get_llm_provider()
-        result = llm.analyze(stack_trace, source_context)
-        record.root_cause = result.get("root_cause")
-        record.affected_files = result.get("affected_files")
-        record.suggested_fix = result.get("suggested_fix")
-        record.status = "triaged"
-        record.triaged_at = datetime.now(timezone.utc)
-        if open_pr and record.suggested_fix and file_paths:
+        source_context = ""
+        for path in file_paths[:3]:
             try:
-                pr_url = github.create_fix_pull_request(
-                    file_paths=file_paths,
-                    fix_code=record.suggested_fix,
-                    issue_title=f"Fix: {record.exception_type} in {record.service_name}",
-                    issue_body=f"Root cause: {record.root_cause}",
+                content = github.get_file_content(path)
+                if content:
+                    source_context += f"--- {path} ---\n{truncate_log(content, 2000)}\n\n"
+            except Exception as e:
+                logger.warning(f"Could not fetch context for {path}: {e}")
+
+        llm = get_llm_provider()
+        analysis = llm.analyze_error(
+            service_name=record.service_name,
+            exception_type=record.exception_type,
+            error_message=record.error_message,
+            stack_trace=stack_trace,
+            source_context=source_context,
+        )
+
+        record.root_cause = analysis.get("root_cause")
+        record.suggested_fix = analysis.get("suggested_fix")
+        record.confidence_score = analysis.get("confidence_score")
+        record.status = "triaged"
+
+        if open_pr and record.suggested_fix:
+            try:
+                pr_url = github.create_pull_request(
+                    title=f"Fix: {record.exception_type} in {record.service_name}",
+                    body=f"Automated fix suggestion for error log {record.id}.\n\nRoot Cause:\n{record.root_cause}",
+                    patch=record.suggested_fix,
                 )
                 record.pr_url = pr_url
-            except GitHubServiceError as err:
-                logger.error("Failed to create PR: %s", err)
+            except Exception as e:
+                logger.error(f"Failed to create PR for error log {record.id}: {e}")
+
         db.commit()
-    except Exception as err:
-        logger.error("Triage failed for error %s: %s", error_log_id, err)
-        db.rollback()
+    except Exception as e:
+        logger.error(f"Error during triage for {error_log_id}: {e}")
         record.status = "failed"
         db.commit()
+        raise
+
     return record
